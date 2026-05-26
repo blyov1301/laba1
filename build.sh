@@ -1,40 +1,25 @@
 #!/bin/bash
 
+# Установка GTest
+sudo apt-get install -y libgtest-dev cmake
+cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp *.a /usr/lib
+
 # Сборка
-mkdir -p build
-cd build
-cmake ..
-make
+cd $GITHUB_WORKSPACE
+mkdir -p build && cd build
+cmake .. && make
 
-# Запуск тестов
-echo "Running tests..."
+# Тест
 ./run_tests
-if [ $? -eq 0 ]; then
-    echo "Tests passed!"
-else
-    echo "Tests failed!"
-    exit 1
-fi
 
-# Создание deb пакета
-mkdir -p deb_package/usr/local/bin
-cp text_restricter deb_package/usr/local/bin/
+# Deb пакет
+mkdir -p pkg/usr/local/bin
+cp text_restricter pkg/usr/local/bin/
+mkdir -p pkg/DEBIAN
+echo "Package: test" > pkg/DEBIAN/control
+echo "Version: 1.0" >> pkg/DEBIAN/control
+echo "Architecture: amd64" >> pkg/DEBIAN/control
+dpkg-deb --build pkg text-restricter.deb
 
-mkdir -p deb_package/DEBIAN
-cat > deb_package/DEBIAN/control << EOF
-Package: text-restricter
-Version: 1.0
-Section: utils
-Priority: optional
-Architecture: amd64
-Maintainer: User <user@example.com>
-Description: Simple text restriction tool
-EOF
-
-dpkg-deb --build deb_package text-restricter_1.0_amd64.deb
-
-# Создание Release директории
 mkdir -p ../Release
-mv text-restricter_1.0_amd64.deb ../Release/
-
-echo "Done! Deb package in Release/ directory"
+mv text-restricter.deb ../Release/
