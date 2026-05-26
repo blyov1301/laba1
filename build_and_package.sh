@@ -1,25 +1,20 @@
 #!/bin/bash
 set -e
 
-echo "=== Building ==="
-
-# Создаём папку для сборки
-mkdir -p build
-cd build
-
-# Конфигурируем и собираем
+echo "🔨 Building..."
+mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
 
-# Запускаем тесты
+echo "🧪 Running tests..."
 ctest --output-on-failure
 
-# Создаём DEB пакет
+echo "📦 Creating DEB package..."
 cpack -G DEB
 
-# Создаём папку Release и копируем туда DEB
+echo "📁 Copying to Release..."
 mkdir -p ../Release
 cp *.deb ../Release/
 
-echo "=== Done ==="
+echo "✅ Done! Package in Release/"
 ls -lh ../Release/
