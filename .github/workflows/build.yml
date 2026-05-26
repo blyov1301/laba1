@@ -13,17 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential
+        sudo apt-get install -y cmake build-essential g++
+    
+    - name: Make script executable
+      run: chmod +x build_and_package.sh
     
     - name: Build and test
-      run: |
-        chmod +x build_and_package.sh
-        ./build_and_package.sh
+      run: ./build_and_package.sh
     
     - name: Upload DEB to Release
       if: github.event_name == 'release'
