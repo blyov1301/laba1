@@ -1,66 +1,95 @@
-#include <cassert>
+#include <iostream>
+#include <memory>
 #include <string>
+#include <cassert>
 
-// Копируем нужные классы (или можно сделать #include, но проще скопировать)
-
-class NoRestrictionStrategy {
+// Копируем минимально необходимые классы для теста
+class TextRestrictionStrategy
+{
 public:
-    bool Check(std::string const& text) const { return true; }
+    virtual ~TextRestrictionStrategy() = default;
+    virtual bool Check(std::string const& text) const = 0;
 };
 
-class CurseRestrictionStrategy {
+class NoRestrictionStrategy : public TextRestrictionStrategy
+{
 public:
-    bool Check(std::string const& text) const {
+    bool Check(std::string const& text) const override { return true; }
+};
+
+class CurseRestrictionStrategy : public TextRestrictionStrategy
+{
+public:
+    bool Check(std::string const& text) const override
+    {
         return text.find("fuck") == std::string::npos && 
                text.find("shit") == std::string::npos;
     }
 };
 
-class LengthRestrictionStrategy {
+class LengthRestrictionStrategy : public TextRestrictionStrategy
+{
 public:
     LengthRestrictionStrategy(std::size_t min, std::size_t max) : min_(min), max_(max) {}
-    bool Check(std::string const& text) const {
+    bool Check(std::string const& text) const override
+    {
         return text.length() >= min_ && text.length() <= max_;
     }
 private:
     std::size_t min_, max_;
 };
 
-template <typename T>
-class TextRestricter {
+class TextRestricter
+{
 public:
-    explicit TextRestricter(T&& s) : strategy_(std::move(s)) {}
+    explicit TextRestricter(std::unique_ptr<TextRestrictionStrategy>&& s) : strategy_(std::move(s)) {}
     
-    bool ConcatText(std::string const& a, std::string const& b, std::string& out) const {
+    bool ConcatText(std::string const& a, std::string const& b, std::string& out) const
+    {
         out = a + b;
-        if (strategy_.Check(out)) return true;
+        if (strategy_->Check(out)) return true;
         out.clear();
         return false;
     }
+    
 private:
-    T strategy_;
+    std::unique_ptr<TextRestrictionStrategy> strategy_;
 };
 
-template <typename T>
-auto MakeTextRestrictor(T&& s) { return TextRestricter<T>(std::move(s)); }
-
-// Один тест - проверяем ConcatText с разными стратегиями
-int main() {
-    // Тест 1: NoRestrictionStrategy - всегда успех
-    auto r1 = MakeTextRestrictor(NoRestrictionStrategy());
+// ============ ТЕСТ ============
+int main()
+{
+    std::cout << "=== Running Tests ===\n";
+    
+    // Тест 1: NoRestrictionStrategy
+    auto r1 = TextRestricter(std::make_unique<NoRestrictionStrategy>());
     std::string result;
-    assert(r1.ConcatText("hello", "world", result) == true);
+    
+    bool ok = r1.ConcatText("hello", "world", result);
+    assert(ok == true);
     assert(result == "helloworld");
+    std::cout << "✓ Test 1 passed: NoRestrictionStrategy\n";
     
-    // Тест 2: CurseRestrictionStrategy - блокирует плохие слова
-    auto r2 = MakeTextRestrictor(CurseRestrictionStrategy());
-    assert(r2.ConcatText("bad ", "fuck", result) == false);
+    // Тест 2: CurseRestrictionStrategy
+    auto r2 = TextRestricter(std::make_unique<CurseRestrictionStrategy>());
+    
+    ok = r2.ConcatText("bad ", "fuck", result);
+    assert(ok == false);
     assert(result.empty());
+    std::cout << "✓ Test 2 passed: CurseRestrictionStrategy\n";
     
-    // Тест 3: LengthRestrictionStrategy - проверка длины
-    auto r3 = MakeTextRestrictor(LengthRestrictionStrategy(1, 5));
-    assert(r3.ConcatText("ab", "cde", result) == true);   // "abcde" length 5
-    assert(r3.ConcatText("too", "longgg", result) == false); // too long
+    // Тест 3: LengthRestrictionStrategy (длина от 1 до 5)
+    auto r3 = TextRestricter(std::make_unique<LengthRestrictionStrategy>(1, 5));
     
-    return 0; // Все тесты прошли
+    ok = r3.ConcatText("ab", "cde", result);  // "abcde" длина 5
+    assert(ok == true);
+    assert(result == "abcde");
+    
+    ok = r3.ConcatText("too", "longgg", result);  // слишком длинная
+    assert(ok == false);
+    assert(result.empty());
+    std::cout << "✓ Test 3 passed: LengthRestrictionStrategy\n";
+    
+    std::cout << "\n✅ ALL TESTS PASSED!\n";
+    return 0;
 }
