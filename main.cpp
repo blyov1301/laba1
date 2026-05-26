@@ -2,19 +2,26 @@
 #include <memory>
 #include <string>
 
-class NoRestrictionStrategy
+class TextRestrictionStrategy
 {
 public:
-    bool Check(std::string const& text) const
+    virtual ~TextRestrictionStrategy() = default;
+    virtual bool Check(std::string const& text) const = 0;
+};
+
+class NoRestrictionStrategy : public TextRestrictionStrategy
+{
+public:
+    bool Check(std::string const& text) const override
     {
         return true;
     }
 };
 
-class CurseRestrictionStrategy
+class CurseRestrictionStrategy : public TextRestrictionStrategy
 {
 public:
-    bool Check(std::string const& text) const
+    bool Check(std::string const& text) const override
     {
         auto npos = std::string::npos;
 
@@ -27,14 +34,14 @@ public:
     }
 };
 
-class LengthRestrictionStrategy
+class LengthRestrictionStrategy : public TextRestrictionStrategy
 {
 public:
     LengthRestrictionStrategy(std::size_t minLength, std::size_t maxLength)
         : minLength_(minLength), maxLength_(maxLength)
     {}
 
-    bool Check(std::string const& text) const
+    bool Check(std::string const& text) const override
     {
         auto length = text.length();
 
@@ -50,23 +57,16 @@ private:
     std::size_t minLength_, maxLength_;
 };
 
-/*
-    런타임에 전략을 변경할 필요가 없는 경우, 템플릿을 활용하여 정적으로 전략이
-    binding 되도록 할 수 있습니다.
-    이 경우, 비록 유연성은 떨어지지만, 가상 함수 호출에 따른 overhead가
-    발생하지 않는 이점이 있습니다.
-*/
-template <typename TextRestrictionStrategy>
 class TextRestricter
 {
 public:
-    explicit TextRestricter(TextRestrictionStrategy&& strategy)
+    explicit TextRestricter(std::unique_ptr<TextRestrictionStrategy>&& strategy)
         : strategy_(std::move(strategy))
     {}
 
     void PrintText(std::string const& text) const
     {
-        if (strategy_.Check(text))
+        if (strategy_->Check(text))
         {
             std::cout << text << std::endl;
         }
@@ -82,7 +82,7 @@ public:
     {
         concatedText = text_1 + text_2;
 
-        if (strategy_.Check(concatedText))
+        if (strategy_->Check(concatedText))
         {
             return true;
         }
@@ -93,18 +93,15 @@ public:
         }
     }
 
+    void ChangeStrategy(std::unique_ptr<TextRestrictionStrategy>&& strategy)
+    {
+        strategy_ = std::move(strategy);
+    }
+
 private:
-    TextRestrictionStrategy strategy_;
+    std::unique_ptr<TextRestrictionStrategy> strategy_;
 };
 
-template <typename TextRestrictionStrategy>
-auto MakeTextRestrictor(TextRestrictionStrategy&& strategy)
-    -> TextRestricter<TextRestrictionStrategy>
-{
-    return TextRestricter<TextRestrictionStrategy>(std::move(strategy));
-}
-
-template <typename TextRestricter>
 void ConcatAndPrintText(TextRestricter const& textRestricter,
                         std::string const& text_1,
                         std::string const& text_2)
@@ -121,7 +118,6 @@ void ConcatAndPrintText(TextRestricter const& textRestricter,
     }
 }
 
-template <typename TextRestricter>
 void Test(TextRestricter const& textRestricter)
 {
     textRestricter.PrintText("fuck");
@@ -131,12 +127,16 @@ void Test(TextRestricter const& textRestricter)
 
 int main()
 {
+    TextRestricter textRestricter(std::make_unique<NoRestrictionStrategy>());
+
     std::cout << "[*] Test with 'NoRestrictionStrategy'." << std::endl;
-    Test(MakeTextRestrictor(NoRestrictionStrategy()));
+    Test(textRestricter);
 
     std::cout << "\n[*] Test with 'CurseRestrictionStrategy'." << std::endl;
-    Test(MakeTextRestrictor(CurseRestrictionStrategy()));
+    textRestricter.ChangeStrategy(std::make_unique<CurseRestrictionStrategy>());
+    Test(textRestricter);
 
     std::cout << "\n[*] Test with 'LengthRestrictionStrategy'." << std::endl;
-    Test(MakeTextRestrictor(LengthRestrictionStrategy(0, 8)));
+    textRestricter.ChangeStrategy(std::make_unique<LengthRestrictionStrategy>(0, 8));
+    Test(textRestricter);
 }
