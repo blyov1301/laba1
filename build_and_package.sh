@@ -1,20 +1,37 @@
 #!/bin/bash
 set -e
 
-echo "🔨 Building..."
-mkdir -p build && cd build
-cmake ..
+echo "========================================="
+echo "Building Strategy Pattern Demo"
+echo "========================================="
+
+# Создаём папку для сборки
+mkdir -p build
+cd build
+
+# Конфигурируем CMake
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Собираем
 make -j$(nproc)
 
-echo "🧪 Running tests..."
-ctest --output-on-failure
+# Запускаем тест
+echo ""
+echo "Running tests..."
+./test_runner
 
-echo "📦 Creating DEB package..."
+# Создаём DEB пакет
+echo ""
+echo "Creating DEB package..."
 cpack -G DEB
 
-echo "📁 Copying to Release..."
-mkdir -p ../Release
-cp *.deb ../Release/
+# Копируем в Release
+cd ..
+mkdir -p Release
+cp build/*.deb Release/
 
-echo "✅ Done! Package in Release/"
-ls -lh ../Release/
+echo ""
+echo "========================================="
+echo "SUCCESS!"
+echo "========================================="
+ls -lh Release/
