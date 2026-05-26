@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(StrategyPattern VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Основная программа
 add_executable(strategy_demo main.cpp)
@@ -18,4 +19,6 @@ set(CPACK_GENERATOR "DEB")
 set(CPACK_PACKAGE_NAME "strategy-pattern-demo")
 set(CPACK_PACKAGE_VERSION "1.0.0")
 set(CPACK_PACKAGE_DESCRIPTION "Strategy Pattern Demo - Text Restriction")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Student <student@example.com>")
+
 include(CPack)
