@@ -1,28 +1,21 @@
 cmake_minimum_required(VERSION 3.10)
-project(MyProject VERSION 1.0.0)
+project(StrategyPattern VERSION 1.0.0)
 
-# Устанавливаем C++ стандарт
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
-# Создаём исполняемый файл для теста
+# Основная программа
+add_executable(strategy_demo main.cpp)
+
+# Тестовая программа
 add_executable(test_runner test.cpp)
 
-# Подключаем Google Test (автоматически скачается)
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-FetchContent_MakeAvailable(googletest)
-
-target_link_libraries(test_runner PRIVATE gtest_main)
-
-# Включаем тесты
+# Включаем тестирование
 enable_testing()
-add_test(NAME MyTest COMMAND test_runner)
+add_test(NAME StrategyTest COMMAND test_runner)
 
-# Настройка CPack для DEB пакета
+# Настройка DEB пакета
 set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_NAME "strategy-pattern-demo")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_DESCRIPTION "Strategy Pattern Demo - Text Restriction")
 include(CPack)
