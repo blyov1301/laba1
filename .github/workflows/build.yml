@@ -1,10 +1,8 @@
-name: CI
+name: Build and Test
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   release:
     types: [created]
 
@@ -13,31 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v2
     
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential g++
-    
-    - name: Make script executable
-      run: chmod +x build_and_package.sh
+        sudo apt-get install -y cmake build-essential dpkg-dev
     
     - name: Build and test
-      run: ./build_and_package.sh
+      run: |
+        chmod +x build.sh
+        ./build.sh
     
-    - name: Upload DEB to Release
+    - name: Upload Release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: Release/*.deb
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Upload artifact (for PRs)
-      if: github.event_name == 'pull_request'
-      uses: actions/upload-artifact@v4
-      with:
-        name: deb-package
-        path: Release/*.deb
